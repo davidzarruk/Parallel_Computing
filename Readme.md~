@@ -27,4 +27,4 @@ The file `Makefile` contains the compilation flags used in Linux and can be used
 9. `Rcpp_main.cpp`: C++ code for Rcpp package in R
 10. `Rcpp_main.R`: Rcpp code
 11. `R_main.R`: R code
-12. `Makefile`: Makefile to execute codes
+
