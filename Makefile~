@@ -1,6 +1,6 @@
 
 # Home directory
-HOMET=/home/davidza/
+HOMET=~/Computation/Computation/Parallel_Computing
 
 # Ask the number of cores to be used in the parallelization:
 CORES := $(shell bash -c 'read -p "Enter the number of cores for parallelization: " pwd; echo $$pwd') 
@@ -36,15 +36,7 @@ MPI:
 	rm main
 
 CUDA:
-	export PATH=/usr/local/cuda/bin/:$PATH
-	export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
 	nvcc CUDA_main.cu -o main
 	./main
 	rm main
-
-nloptinst:
-	wget http://ab-initio.mit.edu/nlopt/nlopt-2.4.2.tar.gz -P $(HOMET)
-	tar  -zxvf $(HOMET)nlopt-2.4.2.tar.gz -C$(HOMET)
-	mkdir $(HOMET)install
-	cd $(HOMET)nlopt-2.4.2 && ./configure --prefix=$(HOMET)install && make && make install
 

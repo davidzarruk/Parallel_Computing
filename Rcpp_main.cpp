@@ -1,7 +1,3 @@
-//
-//  Created by David Zarruk Valencia on June, 2016.
-//  Copyright (c) 2016 David Zarruk Valencia. All rights reserved.
-//
 
 #include <iostream>
 #include <nlopt.hpp>

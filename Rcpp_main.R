@@ -20,7 +20,7 @@ sourceCpp("Rcpp_main.cpp")
 # Grid for x
 nx            = 300; 
 xmin          = 0.1; 
-xmax          = 4.0;
+xmax          = 4.0; 
 
 # Grid for e: parameters for Tauchen
 ne            = 15; 
