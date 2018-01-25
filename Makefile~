@@ -1,6 +1,6 @@
 
 # Home directory
-HOMET=~/Computation/Computation/Parallel_Computing
+HOMET=/home/davidza/
 
 # Ask the number of cores to be used in the parallelization:
 CORES := $(shell bash -c 'read -p "Enter the number of cores for parallelization: " pwd; echo $$pwd') 
@@ -36,6 +36,8 @@ MPI:
 	rm main
 
 CUDA:
+	export PATH=/usr/local/cuda/bin/:$PATH
+	export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
 	nvcc CUDA_main.cu -o main
 	./main
 	rm main

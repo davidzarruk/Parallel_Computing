@@ -36,8 +36,6 @@ MPI:
 	rm main
 
 CUDA:
-	export PATH=/usr/local/cuda/bin/:$PATH
-	export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
 	nvcc CUDA_main.cu -o main
 	./main
 	rm main
