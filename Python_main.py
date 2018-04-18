@@ -19,7 +19,7 @@ import sys
 num_cores = int(sys.argv[1]);
 
 # Grid for x
-nx            = 300;
+nx            = 1500;
 xmin          = 0.1;
 xmax          = 4.0;
 
@@ -31,10 +31,6 @@ m             = 1.5;
 
 # Utility function
 ssigma        = 2;
-eeta          = 0.36;
-ppsi          = 0.89;
-rrho          = 0.5;
-llambda       = 1;
 bbeta         = 0.97;
 T             = 10;
 
@@ -42,10 +38,14 @@ T             = 10;
 r             = 0.07;
 w             = 5;
 
-# Initialize grids
+# Initialize the grid for X
 xgrid = numpy.zeros(nx)
+
+# Initialize the grid for E and the transition probability matrix
 egrid = numpy.zeros(ne)
 P     = numpy.zeros((ne, ne))
+
+# Initialize value function V
 V     = numpy.zeros((T, nx, ne))
 
 
@@ -53,7 +53,7 @@ V     = numpy.zeros((T, nx, ne))
 #         Grid creation          #
 #--------------------------------#
 
-# Grid for x
+# Function to construct the grid for capital (x)
 size = nx;
 xstep = (xmax - xmin) /(size - 1);
 it = 0;
@@ -62,7 +62,7 @@ for i in range(0,nx):
 	it = it+1;
 
 
-# Grid for e with Tauchen (1986)
+# Function to construct the grid for productivity (e) using Tauchen (1986)
 size = ne;
 ssigma_y = math.sqrt(math.pow(ssigma_eps, 2) / (1 - math.pow(llambda_eps,2)));
 estep = 2*ssigma_y*m / (size-1);
@@ -72,7 +72,7 @@ for i in range(0,ne):
 	it = it+1;
 
 
-# Transition probability matrix Tauchen (1986) 
+# Function to construct the transition probability matrix for productivity (P) using Tauchen (1986)
 mm = egrid[1] - egrid[0];
 for j in range(0,ne):
 	for k in range(0,ne):
@@ -89,6 +89,7 @@ for i in range(0,ne):
 	egrid[i] = math.exp(egrid[i]);
 
 
+
 #--------------------------------#
 #     Structure and function     #
 #--------------------------------#
@@ -96,7 +97,8 @@ for i in range(0,ne):
 # Value function
 VV = math.pow(-10, 5);
 
-# Structure of input parameters for the value function estimation
+
+# Data structure of state and exogenous variables
 class modelState(object):
 	def __init__(self,ind,ne,nx,T,age,P,xgrid,egrid,ssigma,bbeta,w,r):
 		self.ind		= ind

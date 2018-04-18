@@ -139,10 +139,32 @@ float value(modelState currentState){
 //         MAIN  MAIN  MAIN
 //======================================
 
-// [[Rcpp::export]]
-vector<double> value(int nx, float xmin, float xmax, 
-                     int ne, float ssigma_eps, float llambda_eps, float m, 
-                     float ssigma, float bbeta, int T, float r, float w){ 
+int main()
+{
+
+  //--------------------------------//
+  //         Initialization         //
+  //--------------------------------//
+
+  // Grid for x
+  const int nx              = 15000;
+  const float xmin          = 0.1;
+  const float xmax          = 4.0;
+
+  // Grid for e
+  const int ne              = 15;
+  const float ssigma_eps    = 0.02058;
+  const float llambda_eps   = 0.99;
+  const float m             = 1.5;
+
+  // Utility function
+  const float ssigma        = 2;
+  const float bbeta         = 0.97;
+  const int T               = 10;
+
+  // Prices
+  const float r             = 0.07;
+  const float w             = 5;
 
   // Initialize the grid for X
   float xgrid[nx];
@@ -152,14 +174,10 @@ vector<double> value(int nx, float xmin, float xmax,
   float P[ne*ne];
 
   // Initialize value function V
-  vector<double> Val;
-  Val.resize(T*nx*ne);
-
-  // Initialize value function V - provisional
   size_t sizeV     = T*ne*nx*sizeof(float);
   float *V;
   V     = (float *)malloc(sizeV);
-  
+
   // Initialize data structure of state and exogenous variables
   modelState currentState;
 
@@ -191,11 +209,11 @@ vector<double> value(int nx, float xmin, float xmax,
   double t   = t0;
 
   for(int age=T-1; age>=0; age--){
-    
-#pragma omp parallel for shared(V, age, P, xgrid, egrid, t, t0) private(currentState)
+
+    #pragma omp parallel for shared(V, age, P, xgrid, egrid, t, t0) private(currentState)
     for(int ix = 0; ix<nx; ix++){
       for(int ie = 0; ie<ne; ie++){
-        
+	    
         modelState currentState = {ie, ix, ne, nx, T, age, P, xgrid, egrid, ssigma, bbeta, V, w, r};
         V[age*nx*ne + ix*ne + ie] = value(currentState);
 
@@ -205,18 +223,26 @@ vector<double> value(int nx, float xmin, float xmax,
     t = omp_get_wtime() - t0;
     cout << "Age: " << age+1 << ". Time: " << 1000000*((float)t)/CLOCKS_PER_SEC << " seconds." << endl;
   }
-  
+
   cout << " " << endl;
   t = omp_get_wtime() - t0;
   cout << "TOTAL ELAPSED TIME: " << 1000000*((float)t)/CLOCKS_PER_SEC << " seconds. " << endl;
 
-  for(int age=T-1; age>=0; age--){
-    for(int ix = 0; ix<nx; ix++){
-      for(int ie = 0; ie<ne; ie++){
-        Val[age*nx*ne + ix*ne + ie] = V[age*nx*ne + ix*ne + ie];
-      }
-    }
+
+  //--------------------------------//
+  //           Some checks          //
+  //--------------------------------//
+
+  cout << " " << endl;
+  cout << " - - - - - - - - - - - - - - - - - - - - - " << endl;
+  cout << " " << endl;
+  cout << "The first entries of the value function: " << endl;
+  cout << " " << endl;
+
+  for(int i = 0; i<3; i++){
+    cout << V[i] << endl;
   }
-  
-  return Val;
+  cout << " " << endl;
+
+  return 0;
 }

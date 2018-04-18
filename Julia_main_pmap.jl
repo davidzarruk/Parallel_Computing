@@ -13,7 +13,7 @@ using Distributions
 # addprocs(1)
 
 # Grid for x
-nx            = 300;
+nx            = 1500;
 xmin          = 0.1;
 xmax          = 4.0;
 
@@ -25,10 +25,6 @@ m             = 1.5;
 
 # Utility function
 ssigma        = 2;
-eeta          = 0.36;
-ppsi          = 0.89;
-rrho          = 0.5;
-llambda       = 1;
 bbeta         = 0.97;
 T             = 10;
 
@@ -36,17 +32,22 @@ T             = 10;
 r             = 0.07;
 w             = 5;
 
-# Initialize grids
+# Initialize the grid for X
 xgrid = zeros(nx)
+
+# Initialize the grid for E and the transition probability matrix
 egrid = zeros(ne)
 P     = zeros(ne, ne)
+
+# Initialize value function V
 V     = zeros(T, nx, ne)
+
 
 #--------------------------------#
 #         Grid creation          #
 #--------------------------------#
 
-# Grid for x
+# Grid for capital (x)
 size = nx;
 xstep = (xmax - xmin) /(size - 1);
 it = 0;
@@ -55,7 +56,7 @@ for i = 1:nx
   it = it+1;
 end
 
-# Grid for e with Tauchen (1986)
+# Grid for productivity (e) with Tauchen (1986)
 size = ne;
 ssigma_y = sqrt((ssigma_eps^2) / (1 - (llambda_eps^2)));
 estep = 2*ssigma_y*m / (size-1);
@@ -65,7 +66,7 @@ for i = 1:ne
   it = it+1;
 end
 
-# Transition probability matrix Tauchen (1986)
+# Transition probability matrix (P) Tauchen (1986)
 mm = egrid[2] - egrid[1];
 for j = 1:ne
   for k = 1:ne
@@ -89,7 +90,7 @@ end
 #     Structure and function     #
 #--------------------------------#
 
-# Value function structure
+# Data structure of state and exogenous variables
 @everywhere type modelState
   ind::Int64
   ne::Int64
@@ -106,6 +107,7 @@ end
   r::Float64
 end
 
+# Function that computes value function, given vector of state variables
 @everywhere function value(currentState::modelState)
 
   ind     = currentState.ind
@@ -120,7 +122,7 @@ end
   bbeta   = currentState.bbeta
   w       = currentState.w
   r       = currentState.r
-  V      = currentState.V
+  V       = currentState.V
 
   ix      = convert(Int, floor((ind-0.05)/ne))+1;
   ie      = convert(Int, floor(mod(ind-0.05, ne))+1);

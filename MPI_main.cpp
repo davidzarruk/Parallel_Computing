@@ -14,12 +14,13 @@ using namespace std;
 //         Grids
 //======================================
 
+// Function to construct the grid for capital (x)
 void gridx(const int nx, const float xmin, const float xmax, float* xgrid){
-  
+
   const float size = nx;
   const float xstep = (xmax - xmin) /(size - 1);
   float it = 0;
-  
+
   for(int i = 0; i < nx; i++){
     xgrid[i] = xmin + it*xstep;
     it++;
@@ -27,33 +28,36 @@ void gridx(const int nx, const float xmin, const float xmax, float* xgrid){
 }
 
 
+// Function to construct the grid for productivity (e) using Tauchen (1986)
 void gride(const int ne, const float ssigma_eps, const float llambda_eps, const float m, float* egrid){
-  
+
   // This grid is made with Tauchen (1986)
   const float size = ne;
   const float ssigma_y = sqrt(pow(ssigma_eps, 2) / (1 - pow(llambda_eps, 2)));
   const float estep = 2*ssigma_y*m / (size-1);
   float it = 0;
-  
+
   for(int i = 0; i < ne; i++){
     egrid[i] = (-m*sqrt(pow(ssigma_eps, 2) / (1 - pow(llambda_eps, 2))) + it*estep);
     it++;
   }
 }
 
+// Function to compute CDF of Normal distribution
 float normCDF(const float value){
   return 0.5 * erfc(-value * M_SQRT1_2);
 }
 
 
 
+// Function to construct the transition probability matrix for productivity (P) using Tauchen (1986)
 void eprob(const int ne, const float ssigma_eps, const float llambda_eps, const float m, const float* egrid, float* P){
-  
+
   // This grid is made with Tauchen (1986)
   // P is: first ne elements are transition from e_0 to e_i,
   //       second ne elementrs are from e_1 to e_i, ...
   const float w = egrid[1] - egrid[0];
-  
+
   for(int j = 0; j < ne; j++){
     for(int k = 0; k < ne; k++){
       if(k == 0){
@@ -65,6 +69,73 @@ void eprob(const int ne, const float ssigma_eps, const float llambda_eps, const 
       }
     }
   }
+}
+
+
+// Data structure of state and exogenous variables
+struct modelState{
+  int ie;
+  int ix;
+  int ne;
+  int nx;
+  int T;
+  int age;
+  float *P;
+  float *xgrid;
+  float *egrid;
+  float ssigma;
+  float bbeta;
+  float *V;
+  float w;
+  float r;
+};
+
+// Function that computes value function, given vector of state variables
+float value(modelState currentState){
+
+  int ie         = currentState.ie;
+  int ix         = currentState.ix;
+  int ne         = currentState.ne;
+  int nx         = currentState.nx;
+  int T          = currentState.T;
+  int age        = currentState.age;
+  float *P       = currentState.P;
+  float *xgrid   = currentState.xgrid;
+  float *egrid   = currentState.egrid;
+  float ssigma   = currentState.ssigma;
+  float bbeta    = currentState.bbeta;
+  float *V       = currentState.V;
+  float w        = currentState.w;
+  float r        = currentState.r;
+
+  float expected;
+  float utility;
+  float cons;
+  float VV = pow(-10.0,5.0);
+
+  for(int ixp = 0; ixp < nx; ixp++){
+
+    expected = 0.0;
+    if(age < T-1){
+      for(int iep = 0; iep < ne; iep++){
+        expected = expected + P[ie*ne + iep]*V[(age+1)*nx*ne + ixp*ne + iep];
+      }
+    }
+
+    cons  = (1 + r)*xgrid[ix] + egrid[ie]*w - xgrid[ixp];
+
+    utility = pow(cons, 1-ssigma) / (1-ssigma) + bbeta*expected;
+
+    if(cons <= 0){
+      utility = pow(-10.0, 5.0);
+    }
+
+    if(utility >= VV){
+      VV = utility;
+    }
+  }
+
+  return VV;
 }
 
 
@@ -94,7 +165,7 @@ int main()
   //--------------------------------//
 
   // Grid for x
-  const int nx              = 300; 
+  const int nx              = 1500; 
   const float xmin          = 0.1; 
   const float xmax          = 4.0;
 
@@ -106,10 +177,6 @@ int main()
 
   // Utility function
   const float ssigma        = 2; 
-  const float eeta          = 0.36; 
-  const float ppsi          = 0.89; 
-  const float rrho          = 0.5; 
-  const float llambda       = 1; 
   const float bbeta         = 0.97;
   const int T               = 10;
 
@@ -123,6 +190,45 @@ int main()
   // Initialize the grid for E and the probability matrix
   float egrid[ne];  
   float P[ne*ne];
+
+  // Total Value function
+  size_t sizeVal     = T*ne*nx*sizeof(float);
+  float *Val;
+  Val     = (float *)malloc(sizeVal);
+
+  // Value function at every age t+1
+  size_t sizeVal1     = ne*nx*sizeof(float);
+  float *Val1;
+  Val1     = (float *)malloc(sizeVal1);
+
+
+  // Loop limits of parallelization  
+  int loop_min    = (int)((tid + 0)  *  ceil((float)(nx*ne)/nthreads));
+  int loop_max    = (int)((tid + 1)  *  ceil((float)(nx*ne)/nthreads));
+  if(ne*nx < loop_max){
+    loop_max = ne*nx;
+  }
+  int leng = (loop_max - loop_min);
+
+  // Value function at every age t, computed by every processor
+  size_t sizeValp     = leng*sizeof(float);
+  float *Valp;
+  Valp     = (float *)malloc(sizeValp);
+
+  
+  // Initialize iterators
+  int ix;
+  int ie;
+  int iter;
+
+
+  // Parameters for the gathering (MPI_Gatherv) of value function after each iteration  
+  int displs[nthreads],rcounts[nthreads];
+  for(int i = 0; i < nthreads; i++){
+    displs[i] = i*leng;
+    rcounts[i] = leng;
+  }
+
 
   //--------------------------------//
   //         Grid creation          //
@@ -138,45 +244,6 @@ int main()
   }
 
 
-    // Loop limits of parallelization  
-  int loop_min    = (int)((tid + 0)  *  ceil((float)(nx*ne)/nthreads));
-  int loop_max    = (int)((tid + 1)  *  ceil((float)(nx*ne)/nthreads));
-  if(ne*nx < loop_max){
-    loop_max = ne*nx;
-  }
-  int leng = (loop_max - loop_min);
-
-  // Total Value function
-  size_t sizeVal     = T*ne*nx*sizeof(float);
-  float *Val;
-  Val     = (float *)malloc(sizeVal);
-
-  // Value function at every age t+1
-  size_t sizeVal1     = ne*nx*sizeof(float);
-  float *Val1;
-  Val1     = (float *)malloc(sizeVal1);
-
-  // Value function at every age t, computed by every processor
-  size_t sizeValp     = leng*sizeof(float);
-  float *Valp;
-  Valp     = (float *)malloc(sizeValp);
-
-  float expected;
-  float utility;
-  float cons;
-  float VV;
-
-  int ix;
-  int ie;
-  int iter;
-
-  // Parameters for the gathering (MPI_Gatherv) of value function after each iteration  
-  int displs[nthreads],rcounts[nthreads];
-  for(int i = 0; i < nthreads; i++){
-    displs[i] = i*leng;
-    rcounts[i] = leng;
-  }
-
   //--------------------------------//
   //    Life-cycle computation      //
   //--------------------------------//
@@ -187,8 +254,10 @@ int main()
     cout << " " << endl;
   }
 
+  // Variables for computation time
   double t0  = MPI_Wtime();
   double t   = t0;
+
 
   // Compute value function bakwards
   for(int age=T-1; age>=0; age--){
@@ -204,31 +273,9 @@ int main()
       ix = floor(ind/ne);
       ie = ind % ne;
 
-      VV = pow(-10, 5);
+      modelState currentState = {ie, ix, ne, nx, T, age, P, xgrid, egrid, ssigma, bbeta, Val, w, r};
 
-      for(int ixp = 0; ixp < nx; ixp++){
-
-        expected = 0.0;
-        if(age < T-1){
-          for(int iep = 0; iep < ne; iep++){
-            expected = expected + P[ie*ne + iep]*Val[(age+1)*nx*ne + ixp*ne + iep];
-          }
-        }
-
-        cons  = (1 + r)*xgrid[ix] + egrid[ie]*w - xgrid[ixp];
-
-        utility = pow(cons, 1-ssigma) / (1-ssigma) + bbeta*expected;
-
-        if(cons <= 0){
-          utility = pow(-10.0, 5.0);
-        }
-
-        if(utility >= VV){
-          VV = utility;
-        }
-      }
-
-      Valp[iter] = VV;
+      Valp[iter] = value(currentState);
       iter = iter + 1;
     }
 

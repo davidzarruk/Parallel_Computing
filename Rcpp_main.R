@@ -3,9 +3,11 @@
 #         House-keeping          #
 #--------------------------------#
 
+.libPaths( c( .libPaths(), "~/R/x86_64-pc-linux-gnu-library/3.4/") )
+
 library("Rcpp")
 
-setwd("/home/david/Dropbox/Documents/Doctorado/Computation course/Codigos/")
+setwd("/home/david/Dropbox/Documents/Doctorado/Computation course/Codigos/Github Repository/Parallel_Computing_2/")
 
 Sys.setenv("PKG_CXXFLAGS"=" -fopenmp")
 
@@ -18,7 +20,7 @@ sourceCpp("Rcpp_main.cpp")
 #--------------------------------#
 
 # Grid for x
-nx            = 300; 
+nx            = 1500; 
 xmin          = 0.1; 
 xmax          = 4.0; 
 
@@ -30,10 +32,6 @@ m             = 1.5;
 
 # Utility function
 ssigma        = 2; 
-eeta          = 0.36; 
-ppsi          = 0.89; 
-rrho          = 0.5; 
-llambda       = 1; 
 bbeta         = 0.97;
 T             = 10;
 
@@ -48,7 +46,7 @@ w             = 5;
 
 V = value(nx, xmin, xmax, 
       ne, ssigma_eps, llambda_eps, m, 
-      ssigma, eeta, ppsi, rrho, llambda, bbeta, T, r, w);
+      ssigma, bbeta, T, r, w);
 
 
 # I recover the Policy Functions

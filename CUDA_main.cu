@@ -1,5 +1,3 @@
-// [[Rcpp::depends(RcppArmadillo)]]
-// [[Rcpp::depends(RcppEigen)]]
 
 #include <iostream>
 #include <omp.h>
@@ -9,6 +7,7 @@ using namespace std;
 //         Grids
 //======================================
 
+// Function to construct the grid for capital (x)
 void gridx(const int nx, const double xmin, const double xmax, double* xgrid){
 
   const double size = nx;
@@ -22,6 +21,7 @@ void gridx(const int nx, const double xmin, const double xmax, double* xgrid){
 }
 
 
+// Function to construct the grid for productivity (e) using Tauchen (1986)
 void gride(const int ne, const double ssigma_eps, const double llambda_eps, const double m, double* egrid){
 
   // This grid is made with Tauchen (1986)
@@ -36,12 +36,14 @@ void gride(const int ne, const double ssigma_eps, const double llambda_eps, cons
   }
 }
 
+// Function to compute CDF of Normal distribution
 double normCDF(const double value){
   return 0.5 * erfc(-value * M_SQRT1_2);
 }
 
 
 
+// Function to construct the transition probability matrix for productivity (P) using Tauchen (1986)
 void eprob(const int ne, const double ssigma_eps, const double llambda_eps, const double m, const double* egrid, double* P){
 
   // This grid is made with Tauchen (1986)
@@ -68,6 +70,7 @@ void eprob(const int ne, const double ssigma_eps, const double llambda_eps, cons
 //         Parameter structure
 //======================================
 
+// Data structure of state and exogenous variables
 class parameters{
  public:
   int nx;
@@ -79,10 +82,6 @@ class parameters{
   double m;
 
   double ssigma;
-  double eeta;
-  double ppsi;
-  double rrho;
-  double llambda;
   double bbeta;
   int T;
   double r;
@@ -92,21 +91,17 @@ class parameters{
 };
 
 
-
-//======================================
-//         MAIN  MAIN  MAIN
-//======================================
-
+// Function that computes value function, given vector of state variables
 __global__ void Vmaximization(const parameters params, const double* xgrid, const double* egrid, const double* P, const int age, double* V){
 
   // Recover the parameters
-  const int nx              = params.nx;
-  const int ne              = params.ne;
-  const double ssigma        = params.ssigma;
-  const double bbeta         = params.bbeta;
-  const int T               = params.T;
-  const double r             = params.r;
-  const double w             = params.w;
+  const int nx         = params.nx;
+  const int ne         = params.ne;
+  const double ssigma  = params.ssigma;
+  const double bbeta   = params.bbeta;
+  const int T          = params.T;
+  const double r       = params.r;
+  const double w       = params.w;
 
   // Recover state variables from indices
   const int ix  = blockIdx.x * blockDim.x + threadIdx.x;
@@ -146,31 +141,40 @@ __global__ void Vmaximization(const parameters params, const double* xgrid, cons
 
 
 
+//======================================
+//         MAIN  MAIN  MAIN
+//======================================
+
+
 int main()
 {
-  // Grids
-  const int nx              = 300; 
+
+  //--------------------------------//
+  //         Initialization         //
+  //--------------------------------//
+
+  // Grid for x
+  const int nx               = 1500; 
   const double xmin          = 0.1;
   const double xmax          = 4.0;
-  const int ne              = 15;
+
+  // Grid for e
+  const int ne               = 15;
   const double ssigma_eps    = 0.02058;
   const double llambda_eps   = 0.99;
   const double m             = 1.5;
 
-  // Parameters
+  // Utility function
   const double ssigma        = 2;
-  const double eeta          = 0.36;
-  const double ppsi          = 0.89;
-  const double rrho          = 0.5;
-  const double llambda       = 1;
   const double bbeta         = 0.97;
-  const int T             	= 10;
+  const int T             	 = 10;
 
   // Prices
   const double r             = 0.07;
   const double w             = 5;
 
-  parameters params = {nx, xmin, xmax, ne, ssigma_eps, llambda_eps, m, ssigma, eeta, ppsi, rrho, llambda, bbeta, T, r, w};
+  // Initialize data structure
+  parameters params = {nx, xmin, xmax, ne, ssigma_eps, llambda_eps, m, ssigma, bbeta, T, r, w};
 
   // Pointers to variables in the DEVICE memory
   double *V, *X, *E, *P;
@@ -179,32 +183,40 @@ int main()
   size_t sizeP = ne*ne*sizeof(double);
   size_t sizeV = T*ne*nx*sizeof(double);
 
+  // Allocate memory to objects in device (GPU)
   cudaMalloc((void**)&X, sizeX);
   cudaMalloc((void**)&E, sizeE);
   cudaMalloc((void**)&P, sizeP);
   cudaMalloc((void**)&V, sizeV);
 
-  // Parameters for CUDA: cada block tiene ne columnas, y una fila que representa un valor de x
-  //                      Hay nx blocks
-  //                      Cada layer es una edad >= hay 80 layers
+  // Parameters for CUDA: each block has ne columns, and one row that represents the value of x
+  //                      there are nx blocks
+  //                      Every layer is an age >= there are 80 layers
 
   const int block_size = 30;
   dim3 dimBlock(block_size, ne);
   dim3 dimGrid(nx/block_size, 1);
 
+  // Initialize the grid for X
+  double hxgrid[nx];
+  
+  // Initialize the grid for E and the transition probability matrix
+  double hegrid[ne];
+  double hP[ne*ne];
+
+  //--------------------------------//
+  //         Grid creation          //
+  //--------------------------------//
 
   // Variables in the host have "h" prefix
   // I create the grid for X
-  double hxgrid[nx];
   gridx(nx, xmin, xmax, hxgrid);
 
   // I create the grid for E and the probability matrix
-  double hegrid[ne];
-  double hP[ne*ne];
   gride(ne, ssigma_eps, llambda_eps, m, hegrid);
   eprob(ne, ssigma_eps, llambda_eps, m, hegrid, hP);
 
-    // Exponential of the grid e
+  // Exponential of the grid e
   for(int i=0; i<ne; i++){
     hegrid[i] = exp(hegrid[i]);
   }
@@ -217,6 +229,11 @@ int main()
   cudaMemcpy(E, hegrid, sizeE, cudaMemcpyHostToDevice);
   cudaMemcpy(P, hP, sizeP, cudaMemcpyHostToDevice);
   cudaMemcpy(V, hV, sizeV, cudaMemcpyHostToDevice);
+
+
+  //--------------------------------//
+  //    Life-cycle computation      //
+  //--------------------------------//
 
   std::cout << " " << std::endl;
   std::cout << "Life cycle computation: " << std::endl;
@@ -241,6 +258,7 @@ int main()
   t = clock() - t0;
   std::cout << "TOTAL ELAPSED TIME: " << ((double)t)/CLOCKS_PER_SEC << " seconds. " << std::endl;
 
+  // Copy back from device (GPU) to host (CPU)
   cudaMemcpy(hV, V, sizeV, cudaMemcpyDeviceToHost);
 
   // Free variables in device memory
@@ -248,6 +266,11 @@ int main()
   cudaFree(X);
   cudaFree(E);
   cudaFree(P);
+
+
+  //--------------------------------//
+  //           Some checks          //
+  //--------------------------------//
 
   std::cout << " " << std::endl;
   std::cout << " - - - - - - - - - - - - - - - - - - - - - " << std::endl;

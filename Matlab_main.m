@@ -13,7 +13,7 @@ function []=Matlab_main(cores)
 parpool(str2num(cores));
 
 % Grid for x
-nx            = 300; 
+nx            = 1500; 
 xmin          = 0.1; 
 xmax          = 4.0;
 
@@ -25,10 +25,6 @@ m             = 1.5;
 
 % Utility function
 ssigma        = 2; 
-eeta          = 0.36; 
-ppsi          = 0.89; 
-rrho          = 0.5; 
-llambda       = 1; 
 bbeta         = 0.97;
 T             = 10;
 
@@ -36,11 +32,16 @@ T             = 10;
 r             = 0.07;
 w             = 5;
 
-% Initialize grid
+% Initialize the grid for X
 xgrid = zeros(1, nx);
+
+% Initialize the grid for E and the transition probability matrix
 egrid = zeros(1, ne);
 P     = zeros(ne, ne);
+
+% Initialize value function V
 V     = zeros(T, nx, ne);
+
 
 %--------------------------------%
 %         Grid creation          %
@@ -83,6 +84,8 @@ end
 for i = 1:ne
   egrid(i) = exp(egrid(i));
 end
+
+
 
 %--------------------------------%
 %     Life-cycle computation     %

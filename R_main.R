@@ -15,7 +15,7 @@ no_cores <- as.integer(args)
 cl <- makeCluster(no_cores)
 
 # Grid for x
-nx            = 300; 
+nx            = 1500; 
 xmin          = 0.1; 
 xmax          = 4.0;
 
@@ -27,10 +27,6 @@ m             = 1.5;
 
 # Utility function
 ssigma        = 2; 
-eeta          = 0.36; 
-ppsi          = 0.89; 
-rrho          = 0.5; 
-llambda       = 1; 
 bbeta         = 0.97;
 T             = 10;
 
@@ -49,7 +45,7 @@ V     = array(0, dim=c(T, nx, ne))
 #         Grid creation          #
 #--------------------------------#
 
-# Grid for x
+# Grid for capital (x)
 size = nx;
 xstep = (xmax - xmin) /(size - 1);
 it = 0;
@@ -58,7 +54,7 @@ for(i in 1:nx){
   it = it+1;
 }
 
-# Grid for e with Tauchen (1986)
+# Grid for productivity (e) with Tauchen (1986)
 size = ne;
 ssigma_y = sqrt((ssigma_eps^2) / (1 - (llambda_eps^2)));
 estep = 2*ssigma_y*m / (size-1);
@@ -68,7 +64,7 @@ for(i in 1:ne){
   it = it+1;
 }
 
-# Transition probability matrix Tauchen (1986)
+# Transition probability matrix (P) Tauchen (1986)
 mm = egrid[2] - egrid[1];
 for(j in 1:ne){
   for(k in 1:ne){
@@ -91,6 +87,7 @@ for(i in 1:ne){
 #        Value function          #
 #--------------------------------#
 
+# Function that computes value function, given vector of state variables
 value = function(x){
 
   age    = x$age
