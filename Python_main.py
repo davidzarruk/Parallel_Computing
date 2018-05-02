@@ -95,7 +95,7 @@ for i in range(0,ne):
 #--------------------------------#
 
 # Value function
-VV = math.pow(-10, 5);
+VV = math.pow(-10.0, 5);
 
 
 # Data structure of state and exogenous variables
@@ -134,7 +134,7 @@ def value_func(states):
 	ix = int(math.floor(ind/ne));
 	ie = int(math.floor(ind%ne));
 
-	VV = math.pow(-10, 3)
+	VV = math.pow(-10.0, 3)
 	for ixp in range(0,nx):
 		expected = 0.0;
 		if(age < T-1):
@@ -146,7 +146,7 @@ def value_func(states):
 		utility = math.pow(cons, (1-ssigma))/(1-ssigma) + bbeta*expected;
 
 		if(cons <= 0):
-			utility = math.pow(-10,5);
+			utility = math.pow(-10.0,5);
 		
 		if(utility >= VV):
 			VV = utility;

@@ -105,7 +105,7 @@ for age = T:-1:1
         ix = int64(floor((ind-0.05)/ne))+1;
         ie = int64(floor(mod(ind-0.05, ne))+1);
         
-        VV = -10^3;
+        VV = -10.0^3;
         for ixp = 1:1:nx
         
             expected = 0.0;
@@ -120,7 +120,7 @@ for age = T:-1:1
             utility = (cons^(1-ssigma))/(1-ssigma) + bbeta*expected;
         
             if cons <= 0
-                utility = -10^(5);
+                utility = -10.0^(5);
             end
             if utility >= VV
                 VV = utility;

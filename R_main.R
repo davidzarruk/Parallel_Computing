@@ -107,7 +107,7 @@ value = function(x){
   ix = as.integer(floor((ind-0.05)/ne))+1;
   ie = as.integer(floor((ind-0.05) %% ne)+1);
   
-  VV = -10^3;
+  VV = -10.0^3;
   for(ixp in 1:nx){
     
     expected = 0.0;
@@ -122,7 +122,7 @@ value = function(x){
     utility = (cons^(1-ssigma))/(1-ssigma) + bbeta*expected;
     
     if(cons <= 0){
-      utility = -10^(5);
+      utility = -10.0^(5);
     }
     
     if(utility >= VV){
