@@ -40,7 +40,8 @@ m               = 1.5;
 @everywhere P     = zeros(ne, ne)
 
 # Initialize value function V
-@everywhere V     = zeros(T, nx, ne)
+@everywhere V          = zeros(T, nx, ne)
+@everywhere V_tomorrow = zeros(nx, ne)
 
 # Initialize value function as a shared array
 tempV = SharedArray{Float64}(ne*nx, init = tempV -> tempV[Base.localindexes(tempV)] = myid())
@@ -105,7 +106,7 @@ end
   egrid::Vector{Float64}
   ssigma::Float64
   bbeta::Float64
-  V::Array{Float64,3}
+  V::Array{Float64,2}
   w::Float64
   r::Float64
 end
@@ -139,7 +140,7 @@ end
       expected = 0.0;
       if(age < T)
         for iep = 1:ne
-          expected = expected + P[ie, iep]*V[age+1, ixp, iep];
+          expected = expected + P[ie, iep]*V[ixp, iep];
         end
       end
 
@@ -181,7 +182,7 @@ for age = T:-1:1
     ix      = convert(Int, ceil(ind/ne));
     ie      = convert(Int, floor(mod(ind-0.05, ne))+1);
 
-    currentState = modelState(ind,ne,nx,T,age,P,xgrid,egrid,ssigma,bbeta, V,w,r)
+    currentState = modelState(ind,ne,nx,T,age,P,xgrid,egrid,ssigma,bbeta, V_tomorrow,w,r)
     tempV[ind] = value(currentState);
 
   end
@@ -192,6 +193,7 @@ for age = T:-1:1
     ie      = convert(Int, floor(mod(ind-0.05, ne))+1);
 
     V[age, ix, ie] = tempV[ind]
+    V_tomorrow[ix, ie] = tempV[ind]
   end
 
   finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000;
