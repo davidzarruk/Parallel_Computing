@@ -88,21 +88,7 @@ for(i in 1:ne){
 #--------------------------------#
 
 # Function that computes value function, given vector of state variables
-value = function(x){
-
-  age    = x$age
-  ind    = x$ind
-  ne     = x$ne
-  nx     = x$nx
-  T      = x$T
-  P      = x$P
-  xgrid  = x$xgrid
-  egrid  = x$egrid
-  ssigma = x$ssigma
-  bbeta  = x$bbeta
-  V      = x$V
-  w      = x$w
-  r      = x$r
+value = function(ind){
 
   ix = as.integer(floor((ind-0.05)/ne))+1;
   ie = as.integer(floor((ind-0.05) %% ne)+1);
@@ -145,10 +131,10 @@ print(" ")
 start = proc.time()[3];
 
 for(age in T:1){
+
+  clusterExport(cl, c("V", "age", "ne","nx", "r", "T", "P", "xgrid", "egrid", "ssigma", "bbeta", "w"), envir=environment()) 
   
-  states = lapply(1:(ne*nx), function(x) list(age=age,ind=x,ne=ne,nx=nx,T=T,P=P,
-                                            xgrid=xgrid,egrid=egrid,ssigma=ssigma,bbeta=bbeta,V=V,w=w,r=r))
-  s = parLapply(cl, states, value)
+  s = parLapply(cl, 1:(ne*nx), value)
 
   for(ind in 1:(nx*ne)){
     ix = as.integer(floor((ind-0.05)/ne))+1;
