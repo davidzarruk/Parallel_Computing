@@ -2,15 +2,16 @@
 #         House-keeping          #
 #--------------------------------#
 
-workspace()
 using Distributions
+using Compat.Dates
+using SharedArrays
 
 #--------------------------------#
 #         Initialization         #
 #--------------------------------#
 
 # Number of workers
-# addprocs(8)
+#addprocs(5)
 
 # Grid for x
 @everywhere nx  = 1500;
@@ -44,7 +45,7 @@ m               = 1.5;
 @everywhere V_tomorrow = zeros(nx, ne)
 
 # Initialize value function as a shared array
-tempV = SharedArray{Float64}(ne*nx, init = tempV -> tempV[Base.localindexes(tempV)] = myid())
+tempV = SharedArray{Float64}(ne*nx)
 
 #--------------------------------#
 #         Grid creation          #
@@ -56,7 +57,7 @@ xstep = (xmax - xmin) /(size - 1);
 it = 0;
 for i = 1:nx
   xgrid[i] = xmin + it*xstep;
-  it = it+1;
+  global it = it+1;
 end
 
 # Grid for productivity (e) with Tauchen (1986)
@@ -66,7 +67,7 @@ estep = 2*ssigma_y*m / (size-1);
 it = 0;
 for i = 1:ne
   egrid[i] = (-m*sqrt((ssigma_eps^2) / (1 - (llambda_eps^2))) + it*estep);
-  it = it+1;
+  global it = it+1;
 end
 
 # Transition probability matrix (P) Tauchen (1986)
@@ -95,7 +96,7 @@ end
 #--------------------------------#
 
 # Data structure of state and exogenous variables
-@everywhere type modelState
+@everywhere struct modelState
   ind::Int64
   ne::Int64
   nx::Int64
@@ -177,7 +178,7 @@ start = Dates.unix2datetime(time())
 
 for age = T:-1:1
 
-  @sync @parallel for ind = 1:(ne*nx)
+  @sync @distributed for ind = 1:(ne*nx)
 
     ix      = convert(Int, ceil(ind/ne));
     ie      = convert(Int, floor(mod(ind-0.05, ne))+1);
@@ -216,5 +217,5 @@ print(" \n")
 
 # I print the first entries of the value function, to check
 for i = 1:3
-  print(round(V[1, 1, i], 5), "\n")
+  print(round(V[1, 1, i], digits=5), "\n")
 end

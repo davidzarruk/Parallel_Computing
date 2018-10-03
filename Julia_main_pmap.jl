@@ -2,8 +2,9 @@
 #         House-keeping          #
 #--------------------------------#
 
-workspace()
+using Pkg
 using Distributions
+using Compat.Dates
 
 #--------------------------------#
 #         Initialization         #
@@ -54,7 +55,7 @@ xstep = (xmax - xmin) /(size - 1);
 it = 0;
 for i = 1:nx
   xgrid[i] = xmin + it*xstep;
-  it = it+1;
+  global it = it+1;
 end
 
 # Grid for productivity (e) with Tauchen (1986)
@@ -64,7 +65,7 @@ estep = 2*ssigma_y*m / (size-1);
 it = 0;
 for i = 1:ne
   egrid[i] = (-m*sqrt((ssigma_eps^2) / (1 - (llambda_eps^2))) + it*estep);
-  it = it+1;
+  global it = it+1;
 end
 
 # Transition probability matrix (P) Tauchen (1986)
@@ -92,7 +93,7 @@ end
 #--------------------------------#
 
 # Data structure of state and exogenous variables
-@everywhere type modelState
+@everywhere struct modelState
   ind::Int64
   ne::Int64
   nx::Int64
@@ -208,5 +209,5 @@ print(" \n")
 
 # For comparison, I print first entries of value function
 for i = 1:3
-  print(round(V[1, 1, i], 5), "\n")
+  print(round(V[1, 1, i], digits=5), "\n")
 end
