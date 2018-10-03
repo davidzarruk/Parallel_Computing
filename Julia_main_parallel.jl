@@ -10,9 +10,6 @@ using SharedArrays
 #         Initialization         #
 #--------------------------------#
 
-# Number of workers
-#addprocs(5)
-
 # Grid for x
 @everywhere nx  = 1500;
 xmin            = 0.1;

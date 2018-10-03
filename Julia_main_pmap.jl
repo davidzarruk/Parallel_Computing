@@ -2,16 +2,12 @@
 #         House-keeping          #
 #--------------------------------#
 
-using Pkg
 using Distributions
 using Compat.Dates
 
 #--------------------------------#
 #         Initialization         #
 #--------------------------------#
-
-# Number of workers
-# addprocs(1)
 
 # Grid for x
 nx            = 1500;
