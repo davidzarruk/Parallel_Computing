@@ -2,12 +2,16 @@
 #         House-keeping          #
 #--------------------------------#
 
+using Distributed
 using Distributions
 using Compat.Dates
 
 #--------------------------------#
 #         Initialization         #
 #--------------------------------#
+
+# Number of cores/workers
+addprocs(5)
 
 # Grid for x
 nx            = 1500;

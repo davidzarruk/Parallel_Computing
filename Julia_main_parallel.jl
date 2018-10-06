@@ -2,6 +2,7 @@
 #         House-keeping          #
 #--------------------------------#
 
+using Distributed
 using Distributions
 using Compat.Dates
 using SharedArrays
@@ -9,6 +10,9 @@ using SharedArrays
 #--------------------------------#
 #         Initialization         #
 #--------------------------------#
+
+# Number of cores/workers
+addprocs(5)
 
 # Grid for x
 @everywhere nx  = 1500;
