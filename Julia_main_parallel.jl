@@ -55,20 +55,16 @@ tempV = SharedArray{Float64}(ne*nx)
 # Grid for capital (x)
 size = nx;
 xstep = (xmax - xmin) /(size - 1);
-it = 0;
 for i = 1:nx
-  xgrid[i] = xmin + it*xstep;
-  global it = it+1;
+  xgrid[i] = xmin + (i-1)*xstep;
 end
 
 # Grid for productivity (e) with Tauchen (1986)
 size = ne;
 ssigma_y = sqrt((ssigma_eps^2) / (1 - (llambda_eps^2)));
 estep = 2*ssigma_y*m / (size-1);
-it = 0;
 for i = 1:ne
-  egrid[i] = (-m*sqrt((ssigma_eps^2) / (1 - (llambda_eps^2))) + it*estep);
-  global it = it+1;
+  egrid[i] = (-m*sqrt((ssigma_eps^2) / (1 - (llambda_eps^2))) + (i-1)*estep);
 end
 
 # Transition probability matrix (P) Tauchen (1986)
