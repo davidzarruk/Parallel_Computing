@@ -20,11 +20,13 @@ The file `Makefile` contains the compilation flags used in Linux and can be used
 2. `CUDA_main.cu`: CUDA code
 3. `Julia_main_parallel.jl`: Julia code
 4. `Julia_main_pmap.jl`: Julia code
-5. `Matlab_main.m`: Matlab code
-6. `MPI_host_file`: MPI host file
-6. `MPI_main.cpp`: C++ code for MPI
-8. `Python_main.py`: Python code
-9. `Rcpp_main.cpp`: C++ code for Rcpp package in R
-10. `Rcpp_main.R`: Rcpp code
-11. `R_main.R`: R code
-12. `Makefile`: Makefile to execute codes
+5. `Julia_threads.jl`: Julia code with @threads parallelization
+6. `Matlab_main.m`: Matlab code
+7. `MPI_host_file`: MPI host file
+8. `MPI_main.cpp`: C++ code for MPI
+9. `Python_main.py`: Python code
+10. `Python_numba_main.py`: Python code with numba parallelization
+11. `Rcpp_main.cpp`: C++ code for Rcpp package in R
+12. `Rcpp_main.R`: Rcpp code
+13. `R_main.R`: R code
+14. `Makefile`: Makefile to execute codes
