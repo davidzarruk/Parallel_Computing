@@ -1,8 +1,9 @@
 using Distributions
 using Dates
-using CUDAnative, CuArrays, CUDAdrv, BenchmarkTools
+using CUDAnative, CuArrays, CUDAdrv
 using Crayons
 
+println(Crayon(foreground = :yellow), "\nYour CUDA-device: " * CUDAdrv.name(CuDevice(0)), Crayon(foreground = :white))
 
 struct params
     ne::Int64
@@ -42,7 +43,7 @@ function value(params::params, age::Int64, xgrid, egrid, P, V)
 
         cons  = (1 + r)*xgrid[ix] + egrid[ie]*w - xgrid[ixp];
 
-        # utility = (cons^(1-ssigma))/(1-ssigma) + bbeta*expected;
+        # The ^ operator seems to broken on the GPU. One can always use the CUDAnative internals instead.
         utility = (CUDAnative.pow.(cons,1-ssigma))/(1-ssigma) + bbeta*expected;
 
         if(cons <= 0)
@@ -62,9 +63,7 @@ function value(params::params, age::Int64, xgrid, egrid, P, V)
     return nothing
 end
 
-function main()
-
-    println(CUDAdrv.name(CuDevice(0)))
+function main()    
 
     # Grid for x
     nx = 1500;
@@ -147,13 +146,12 @@ function main()
     print(" \n")
 
     start = Dates.unix2datetime(time())
-        ########################
-        currentState = params(ne,nx,T,ssigma,bbeta,w,r)
-        @inbounds for age = T:-1:1
-            CuArrays.@sync @cuda blocks=50 threads=(30, 15) value(currentState, age, xgrid, egrid, P, V)
-            finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000;
-            # print("Age: ", age, ". Time: ", finish, " seconds. \n")
-        end
+    currentState = params(ne,nx,T,ssigma,bbeta,w,r)
+    @inbounds for age = T:-1:1
+        CuArrays.@sync @cuda blocks=50 threads=(30, 15) value(currentState, age, xgrid, egrid, P, V)
+        finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000;
+        print("Age: ", age, ". Time: ", finish, " seconds. \n")
+    end
     V_neu = Array(V)
     print("\n")
     finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000;
@@ -175,11 +173,7 @@ function main()
     end
 end
 
-println(Crayon(foreground = :red), "\nWarmup call -- slower!", Crayon(foreground = :white))
-@time main()
+println(Crayon(foreground = :red), "\nWarmup call -- slow!", Crayon(foreground = :white))
+main()
 println(Crayon(foreground = :green), "\nProper call -- correct time measurement.", Crayon(foreground = :white))
-@time main()
-
-# main()
-
-# @btime(CuArrays.@sync main())
+main()
