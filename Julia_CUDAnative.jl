@@ -100,8 +100,6 @@ function main()
     # Initialize value function as a shared array
     tempV = CuArray{Float64,1}(zeros(ne*nx))
 
-    println("vor grid")
-
     #--------------------------------#
     #         Grid creation          #
     #--------------------------------#
@@ -139,8 +137,6 @@ function main()
     for i = 1:ne
     egrid[i] = exp(egrid[i]);
     end
-
-    println("nach grid")
 
     #--------------------------------#
     #     Life-cycle computation     #

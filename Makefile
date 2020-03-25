@@ -70,6 +70,7 @@ julia_pmap:
 
 julia_CUDA:
 	julia -p$(CORES) -O3 --color=yes Julia_CUDAnative.jl
+	
 Rcpp:
 	export OMP_NUM_THREADS=$(CORES); Rscript Rcpp_main.R;
 
