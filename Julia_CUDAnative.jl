@@ -32,7 +32,7 @@ function value(params::params, age::Int64, xgrid, egrid, P, V)
     VV      = -10.0^3;
     ixpopt  = 0;
 
-
+    # @inbounds disables bounds checking
     @inbounds for ixp = 1:nx
         expected = 0.0;
         if(age < T)
@@ -85,6 +85,8 @@ function main()
     r = 0.07;
     w = 5;
 
+    # The following arrays are CUDA-arrays. 
+
     # Initialize the grid for X
     xgrid = CuArray{Float64,1}(zeros(nx))
 
@@ -94,14 +96,13 @@ function main()
 
     # Initialize value function V
     V = CuArray{Float64,3}(zeros(T, nx, ne))
-    V_tomorrow = CuArray{Float64,2}(zeros(nx, ne))
-
-    # Initialize value function as a shared array
-    tempV = CuArray{Float64,1}(zeros(ne*nx))
 
     #--------------------------------#
     #         Grid creation          #
     #--------------------------------#
+
+    # The following operations on the CUDA-arrays trigger the warning "Performing scalar operations on GPU arrays: This is very slow..."
+    # One could as well create regular arrays first and transfer them to the GPU later. However, this doesn't change the runtime significantly.
 
     # Grid for capital (x)
     size = nx;
@@ -148,11 +149,15 @@ function main()
     start = Dates.unix2datetime(time())
     currentState = params(ne,nx,T,ssigma,bbeta,w,r)
     @inbounds for age = T:-1:1
+        # I need to sync for correct time measurement. Caution: Just @sync refers to Base.@sync
         CuArrays.@sync @cuda blocks=50 threads=(30, 15) value(currentState, age, xgrid, egrid, P, V)
         finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000;
+        # One should keep in mind, that printing in some environments is pretty slow in Julia. 
+        # Without printing, on my machine Julia runs roughly as fast as C++-CUDA (ca. 1-2% slower)
         print("Age: ", age, ". Time: ", finish, " seconds. \n")
     end
-    V_neu = Array(V)
+    # transfer V back to the CPU to get a fair comparison with C++-CUDA (one can print the results without transfering them back manually, however I don't know what happens under the hood)
+    results = Array(V)
     print("\n")
     finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000;
     print("TOTAL ELAPSED TIME: ", finish, " seconds. \n")
@@ -169,7 +174,7 @@ function main()
 
     # I print the first entries of the value function, to check
     for i = 1:3
-        print(round(V[1, 1, i], digits=5), "\n")
+        print(round(results[1, 1, i], digits=5), "\n")
     end
 end
 
