@@ -147,7 +147,7 @@ int main()
   //--------------------------------//
 
   // Grid for x
-  const int nx              = 15000;
+  const int nx              = 1500;
   const float xmin          = 0.1;
   const float xmax          = 4.0;
 
